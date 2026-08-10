@@ -1,0 +1,90 @@
+[
+  {
+    "id": "canvas-tote",
+    "name": "The daily carry",
+    "category": "Carry",
+    "price": 38,
+    "stock": 14,
+    "kind": "bag",
+    "color": "#967d57",
+    "background": "#ece7dc",
+    "description": "A durable canvas tote for a lighter commute. Room for a laptop, notebook and everyday essentials."
+  },
+  {
+    "id": "desk-lamp",
+    "name": "A softer light",
+    "category": "Workspace",
+    "price": 68,
+    "stock": 8,
+    "kind": "lamp",
+    "color": "#849078",
+    "background": "#e6e9df",
+    "description": "An adjustable desk lamp with warm light for a quiet, focused workspace and evening reading."
+  },
+  {
+    "id": "steel-bottle",
+    "name": "The everyday bottle",
+    "category": "Carry",
+    "price": 28,
+    "stock": 21,
+    "kind": "bottle",
+    "color": "#9aaba2",
+    "background": "#e4eae6",
+    "description": "An insulated water bottle for your commute, travel and outdoor walks. Refill throughout the day."
+  },
+  {
+    "id": "headphones",
+    "name": "A little more focus",
+    "category": "Workspace",
+    "price": 95,
+    "stock": 6,
+    "kind": "headphones",
+    "color": "#685e53",
+    "background": "#e9e5dd",
+    "description": "Comfortable headphones for a focused workspace, quiet listening and long writing sessions."
+  },
+  {
+    "id": "notebook",
+    "name": "Room for a thought",
+    "category": "Workspace",
+    "price": 18,
+    "stock": 32,
+    "kind": "notebook",
+    "color": "#a06a50",
+    "background": "#efe3d8",
+    "description": "A paper notebook for morning journaling, design sketches and daily planning at your desk."
+  },
+  {
+    "id": "ceramic-mug",
+    "name": "The slow morning",
+    "category": "Home",
+    "price": 24,
+    "stock": 17,
+    "kind": "mug",
+    "color": "#9b8a6c",
+    "background": "#eae5d9",
+    "description": "A handmade style ceramic mug for slow mornings, warm coffee and a quiet moment at home."
+  },
+  {
+    "id": "travel-bag",
+    "name": "A weekend away",
+    "category": "Carry",
+    "price": 120,
+    "stock": 0,
+    "kind": "bag",
+    "color": "#4c6657",
+    "background": "#e0e7df",
+    "description": "A spacious travel bag for weekend journeys and a lighter commute."
+  },
+  {
+    "id": "reading-light",
+    "name": "One more chapter",
+    "category": "Home",
+    "price": 54,
+    "stock": 4,
+    "kind": "lamp",
+    "color": "#a79e83",
+    "background": "#efebe0",
+    "description": "A small reading lamp for a quiet evening, a warm corner and slow mornings at home."
+  }
+]
