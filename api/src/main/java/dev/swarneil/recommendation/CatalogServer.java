@@ -162,8 +162,10 @@ public final class CatalogServer {
     }
     try {
       switch (x.getRequestURI().getPath()) {
-        case "/api/health" ->
-            send(x, 200, Map.of("status", "ok", "service", "recommendation-studio"));
+        case "/api/health" -> {
+          catalog(Map.of());
+          send(x, 200, Map.of("status", "ok", "service", "recommendation-studio"));
+        }
         case "/api/catalog" -> send(x, 200, catalog(query(x.getRequestURI().getRawQuery())));
         default -> send(x, 404, Map.of("error", "Not found"));
       }
