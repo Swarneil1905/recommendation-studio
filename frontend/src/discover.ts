@@ -242,7 +242,7 @@ export class DiscoverComponent implements OnInit {
   suggestions = ["A lighter commute", "A focused workspace", "Slow mornings"];
   ngOnInit() {
     try {
-      const ids = JSON.parse(localStorage.getItem("fieldwork-saved") || "[]");
+      const ids = JSON.parse(localStorage.getItem("recommendation-studio-saved") || "[]");
       if (Array.isArray(ids))
         this.saved = new Set(ids.filter((x) => typeof x === "string"));
     } catch {}
@@ -271,7 +271,7 @@ export class DiscoverComponent implements OnInit {
   save(id: string) {
     this.saved.has(id) ? this.saved.delete(id) : this.saved.add(id);
     try {
-      localStorage.setItem("fieldwork-saved", JSON.stringify([...this.saved]));
+      localStorage.setItem("recommendation-studio-saved", JSON.stringify([...this.saved]));
     } catch {}
     void this.search();
   }

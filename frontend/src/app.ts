@@ -8,9 +8,9 @@ import { DesignComponent } from "./design";
   template: ` <a class="skip-link" href="#workspace">Skip to workspace</a>
     <header class="global-header">
       <a class="wordmark" href="#home" (click)="notes.set(false)"
-        ><span class="brand-mark"><i></i><i></i><i></i></span>fieldwork<span
+        ><span class="brand-mark"><i></i><i></i><i></i></span>Recommendation<span
           class="studio-label"
-          >DISCOVER</span
+          >STUDIO</span
         ></a
       >
       <nav aria-label="Workspace navigation">

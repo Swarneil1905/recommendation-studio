@@ -1,27 +1,59 @@
-# Fieldwork Discover
+# Recommendation Studio
 
-An inventory-aware recommendation workspace. Angular supports search, categories, budgets and saved products. Java serves the canonical catalog and applies hard filters. Go ranks descriptions with TF IDF cosine similarity and a saved-item profile.
+Explore a product catalog with natural language search, inventory filters and recommendations informed by your saved products.
 
-## Run locally
+[CI](https://github.com/Swarneil1905/recommendation-studio/actions) · [Architecture](docs/architecture.md) · [Verification notes](docs/verification.md) · [MIT license](LICENSE)
 
-Open this folder in Cursor or open the parent Fieldwork.code-workspace.
+## What you can do
 
-### Docker
+- Search product descriptions and browse by category or budget.
+- Save products locally to influence later recommendations.
+- Filter to saved items and inspect product details.
+- Exclude unavailable inventory before returning results.
 
-Start Docker Desktop, then run `docker compose up --build` from this folder. Open http://localhost:8082.
+The included catalog contains eight fictional products, including an out of stock test item. There is no checkout, external commerce feed or user account service. The ranking system runs locally without paid AI APIs.
 
-### Native development
+## How it works
 
-Requires Go 1.26 or newer, Java 21, Maven 3.9 and Node.js 22.22 or newer.
+```text
+Angular interface → Java catalog API → Go ranking service
+                         ↓                    ↓
+                   catalog.json         30 second cache
+```
 
-Terminal 1:
+| Component | Responsibility |
+| --- | --- |
+| Angular | Search, filters, saved products and accessible detail dialogs |
+| Java 21 | Catalog validation, inventory rules and HTTP API |
+| Go | TF IDF ranking, saved product profiles and bounded result caching |
+| Nginx | Frontend hosting and API proxy in Docker |
 
-```powershell
+The Go service compares TF IDF vectors using cosine similarity. When a query and saved products are present, the query contributes 75% and the saved product profile contributes 25%. Without a query, the saved profile supplies the ranking. Stable product IDs break ties; similarity scores are not probabilities.
+
+The cache holds at most 256 entries with a 30 second TTL and keys the complete ranking input. Java reloads the catalog on each request and applies stock, category, budget and saved item filters. A failed ranking request returns an explicit HTTP 503.
+
+## Quick start with Docker
+
+Requires Docker Desktop or Docker Engine with Compose. From the repository root:
+
+```sh
+docker compose up --build
+```
+
+Open **http://localhost:8082**. Try a descriptive search, save a product, then compare the results. Stop the stack with `docker compose down`.
+
+## Run without Docker
+
+Requires Go 1.26+, Java 21, Maven 3.9+ and Node.js 22.22+. Start each service in its own terminal from the repository root.
+
+**Ranking service:**
+
+```sh
 cd ranker
 go run .
 ```
 
-Terminal 2:
+**Catalog API on Windows:**
 
 ```powershell
 cd api
@@ -29,29 +61,47 @@ mvn -B package
 .\start-api.ps1
 ```
 
-On this Windows machine, Java needed a short socket directory. If Maven tests report a loopback initialization error, create api/.java-tmp and set JAVA_TOOL_OPTIONS to `-Djdk.net.unixdomain.tmpdir="C:\Users\Swarneil Pradhan\Project\recommendation-studio\api\.java-tmp"` before running Maven. The startup script sets this option for the API itself.
+On macOS or Linux, replace the startup script with `java -jar target/catalog-api-1.0.0.jar`, keeping `api` as the working directory.
 
-Terminal 3:
+**Frontend:**
 
-```powershell
+```sh
 cd frontend
 npm ci
 npm start
 ```
 
-Open http://localhost:4202. The initial catalog contains eight fictional products, including one out-of-stock fixture that is never returned to the interface. Product illustrations are original SVGs. No checkout or external live commerce source is connected.
+Open **http://localhost:4202**. The Java API listens on port **8002** and the Go service on **8090**.
 
-## How ranking works
+### Windows Java socket workaround
 
-Go builds TF IDF vectors from product descriptions and compares them with the query. A saved-item profile contributes 25% when there is a query, or supplies the ranking when the query is empty. Stable item IDs break ties. Scores are similarity values, not probabilities.
-
-The ranking cache expires after 30 seconds and contains at most 256 entries. Its key includes the complete ranking input. Java reloads api/catalog.json on each request and applies stock, budget, category and saved-only filters. Failed ranking returns an explicit 503. Update catalog.json atomically if editing inventory while the service runs.
-
-Saved IDs stay in browser localStorage. They are sent to the local API to build the ranking profile. There is no account, purchase or tracking service.
-
-## Tests
+If Maven reports a loopback initialization error caused by a long temporary path, run the following from `api`, then retry the build:
 
 ```powershell
+New-Item -ItemType Directory -Force .java-tmp | Out-Null
+$socketDirectory = (Resolve-Path .java-tmp).Path
+$env:JAVA_TOOL_OPTIONS = '-Djdk.net.unixdomain.tmpdir="' + $socketDirectory + '"'
+mvn -B package
+```
+
+The startup script configures this directory for the API process automatically.
+
+## Configuration and data
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `CATALOG_PATH` | `catalog.json` | Catalog file, relative to the Java process working directory |
+| `RANKER_URL` | `http://127.0.0.1:8090` | Go ranking service address |
+| `PORT` | `8002` | Java API port |
+| `BIND_ADDRESS` | `127.0.0.1` | Java API bind address |
+
+Edit [`api/catalog.json`](api/catalog.json) to change the sample inventory. Replace it atomically if the API is running, so requests do not read a partially written file.
+
+Saved product IDs live in browser `localStorage` and are sent to the API when building recommendations. They do not sync across browsers or devices. No purchase history or external tracking service is connected.
+
+## Development checks
+
+```sh
 cd ranker
 go test ./...
 cd ../api
@@ -60,17 +110,28 @@ cd ../frontend
 npm run build
 ```
 
-Optional HTTP integration checks, with both backends running: `python -m pip install pytest httpx`, then `python -m pytest tests -q` from the project root.
+For HTTP integration checks, start both backend services and run from the repository root:
 
-Verified locally: 5 Go tests, 5 Java tests, 4 HTTP integration tests and the production frontend build. Browser checks verified ranking, saving an item, product detail dialogs and Escape dismissal with focus restoration. Docker Compose configuration validates; container image builds await a running Docker daemon.
+```sh
+python -m pip install pytest httpx
+python -m pytest tests -q
+```
 
-## Code map
+Tests cover ranking behavior, cache expiry, duplicate IDs, catalog filtering and the HTTP integration. GitHub Actions runs the Go and Java tests, frontend build and container builds. See the [verification notes](docs/verification.md) for the recorded browser checks and local results.
 
-* api/src/main/java/dev/fieldwork/CatalogServer.java: bounded HTTP service, catalog validation and stock filters.
-* api/catalog.json: fictional sample inventory.
-* ranker/main.go: ranking and TTL cache.
-* frontend/src/discover.ts: search, filters, local saved IDs and native dialog.
-* docs/: architecture, research provenance and REA evidence.
-* .github/workflows/ci.yml: verification only.
+## Repository guide
 
-Railway deployment remains deferred. Public hosting requires authentication and shared operational controls described in docs/architecture.md.
+| Path | Contents |
+| --- | --- |
+| `frontend/src/discover.ts` | Search, saved products and detail dialogs |
+| `api/src/main/java/dev/swarneil/recommendation/CatalogServer.java` | Catalog service and inventory filters |
+| `api/catalog.json` | Fictional sample inventory |
+| `ranker/main.go` | Ranking implementation and TTL cache |
+| `tests/` | HTTP integration checks |
+| `docs/` | Architecture, design provenance and verification details |
+
+This is a local development application. Public hosting needs authentication and the shared operational controls described in the architecture notes. Railway deployment is not configured.
+
+## License
+
+Original project code is licensed under the [MIT License](LICENSE), copyright © 2026 Swarneil Pradhan. Bundled DM Sans and Instrument Serif fonts retain their SIL Open Font Licenses in [`frontend/public/fonts`](frontend/public/fonts). Third party dependencies retain their respective licenses.
