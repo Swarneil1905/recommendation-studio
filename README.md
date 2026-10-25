@@ -130,7 +130,7 @@ Tests cover ranking behavior, cache expiry, duplicate IDs, catalog filtering and
 | `tests/` | HTTP integration checks |
 | `docs/` | Architecture, design provenance and verification details |
 
-This is a local development application. Public hosting needs authentication and the shared operational controls described in the architecture notes. Railway deployment is not configured.
+The public demo uses a rate limited gateway and a single replica. See [deployment and operations](docs/deployment.md) for CI/CD, resource limits and rollback. The catalog remains fictional sample inventory.
 
 ## License
 
