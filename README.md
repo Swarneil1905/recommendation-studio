@@ -2,7 +2,7 @@
 
 Explore a product catalog with natural language search, inventory filters and recommendations informed by your saved products.
 
-[CI](https://github.com/Swarneil1905/recommendation-studio/actions) · [Architecture](docs/architecture.md) · [Verification notes](docs/verification.md) · [MIT license](LICENSE)
+[Live demo](https://recommendation-studio-production.up.railway.app) · [CI](https://github.com/Swarneil1905/recommendation-studio/actions) · [Architecture](docs/architecture.md) · [Verification notes](docs/verification.md) · [MIT license](LICENSE)
 
 ## What you can do
 
