@@ -1,21 +1,36 @@
 # Recommendation Studio
 
-Explore a product catalog with natural language search, inventory filters and recommendations informed by your saved products.
+Explore how search terms, inventory rules and product preferences affect a recommendation list. Browse an illustrated example catalog, import your own inventory, compare rankings and export the results.
 
-The root URL opens the product homepage. Choose the main action to enter the application at `/workspace`. The homepage explains the workflow, data handling, and current capabilities before a session begins.
+[Open the app](https://recommendation-studio-production.up.railway.app) · [GitHub Actions](https://github.com/Swarneil1905/recommendation-studio/actions) · [MIT license](LICENSE)
 
-[Live demo](https://recommendation-studio-production.up.railway.app) · [CI](https://github.com/Swarneil1905/recommendation-studio/actions) · [Architecture](docs/architecture.md) · [Verification notes](docs/verification.md) · [MIT license](LICENSE)
+## Watch the walkthrough
 
-Import a JSON catalog of up to 500 products, test search and inventory filters, build a preference profile and compare the resulting positions with the query-only baseline. Imports are request scoped and never replace the shared example catalog. Export the results as JSON.
+[![Recommendation Studio walkthrough: search products, add a preference and compare rankings](docs/assets/walkthrough.gif)](docs/assets/walkthrough.mp4)
 
-## What you can do
+[Watch or download the full video](docs/assets/walkthrough.mp4) (00:00:27.76) · [View a still screenshot](docs/assets/preview.png). This silent recording shows the live catalog, preference selection, ranking comparison and JSON export.
 
-- Search product descriptions and browse by category or budget.
-- Add up to 25 products to a temporary preference profile.
-- Compare personalized positions against a query-only baseline and inspect product details.
-- Exclude unavailable inventory before returning results.
+## Try it in a minute
 
-The included catalog contains eight fictional products, including an out of stock test item. There is no checkout, external commerce feed or user account service. The ranking system runs locally without paid AI APIs.
+1. Choose a collection on the homepage and open the catalog workspace.
+2. Search for a use case, then narrow the results by category or budget.
+3. Add a product to your preference profile.
+4. Enable the ranking comparison to see its position against the query only baseline.
+5. Switch between cards and table views, inspect a product or export the results.
+
+The supplied catalog contains eight fictional products with generated product imagery. One product is out of stock so you can inspect inventory filtering. It is a recommendation workbench with no checkout or external commerce feed.
+
+## Current capabilities
+
+| Feature | Behavior |
+| --- | --- |
+| Catalog search | Description matching with category, budget and stock constraints |
+| Preference profile | Up to 25 products used to personalize the ranking |
+| Ranking comparison | Compare personalized positions against the same query without preferences |
+| Catalog import | Validate up to 500 products from a JSON file without replacing shared inventory |
+| Results export | Download the current results and preference profile as JSON |
+
+Ranking uses TF IDF and cosine similarity, with no paid AI API. Similarity is a relevance measure, not a probability. Imported products use a generic illustration when no built in product image is available.
 
 ## How it works
 
@@ -101,7 +116,7 @@ The startup script configures this directory for the API process automatically.
 
 Edit [`api/catalog.json`](api/catalog.json) to change the sample inventory. Replace it atomically if the API is running, so requests do not read a partially written file.
 
-Saved product IDs live in browser `localStorage` and are sent to the API when building recommendations. They do not sync across browsers or devices. No purchase history or external tracking service is connected.
+The preference profile and imported catalog live in the current page session and are sent to the API when building recommendations. Reloading the page clears them. Export results before leaving if you need a record. No purchase history or external tracking service is connected.
 
 ## Development checks
 
@@ -135,6 +150,14 @@ Tests cover ranking behavior, cache expiry, duplicate IDs, catalog filtering and
 | `docs/` | Architecture and verification details |
 
 The public demo uses a rate limited gateway and a single replica. See [deployment and operations](docs/deployment.md) for CI/CD, resource limits and rollback. The catalog remains fictional sample inventory.
+
+## Deployment and availability
+
+The homepage is at `/`; the product workspace is at `/workspace`. The public Railway service uses sleep mode to reduce idle hosting costs. The first visit after inactivity can take longer while the service starts. Public requests are rate limited.
+
+GitHub Actions checks frontend and backend code, builds the containers, tests the public HTTP path, and verifies both process failure handling and a clean Docker shutdown. Only a verified current `main` commit is promoted to the `production` branch that Railway deploys. A normal platform stop exits successfully; an unexpected required process exit fails the container.
+
+See [deployment and operations](docs/deployment.md) for configuration and rollback, and [architecture](docs/architecture.md) for the service boundaries.
 
 ## License
 
