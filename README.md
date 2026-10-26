@@ -2,6 +2,8 @@
 
 Explore a product catalog with natural language search, inventory filters and recommendations informed by your saved products.
 
+The root URL opens the product homepage. Choose the main action to enter the application at `/workspace`. The homepage explains the workflow, data handling, and current capabilities before a session begins.
+
 [Live demo](https://recommendation-studio-production.up.railway.app) · [CI](https://github.com/Swarneil1905/recommendation-studio/actions) · [Architecture](docs/architecture.md) · [Verification notes](docs/verification.md) · [MIT license](LICENSE)
 
 Import a JSON catalog of up to 500 products, test search and inventory filters, build a preference profile and compare the resulting positions with the query-only baseline. Imports are request scoped and never replace the shared example catalog. Export the results as JSON.
@@ -130,10 +132,10 @@ Tests cover ranking behavior, cache expiry, duplicate IDs, catalog filtering and
 | `api/catalog.json` | Fictional sample inventory |
 | `ranker/main.go` | Ranking implementation and TTL cache |
 | `tests/` | HTTP integration checks |
-| `docs/` | Architecture, design provenance and verification details |
+| `docs/` | Architecture and verification details |
 
 The public demo uses a rate limited gateway and a single replica. See [deployment and operations](docs/deployment.md) for CI/CD, resource limits and rollback. The catalog remains fictional sample inventory.
 
 ## License
 
-Original project code is licensed under the [MIT License](LICENSE), copyright © 2026 Swarneil Pradhan. Bundled DM Sans and Instrument Serif fonts retain their SIL Open Font Licenses in [`frontend/public/fonts`](frontend/public/fonts). Third party dependencies retain their respective licenses.
+Original project code is licensed under the [MIT License](LICENSE), copyright © 2026 Swarneil Pradhan. Bundled fonts retain their SIL Open Font Licenses in [`frontend/public/fonts`](frontend/public/fonts). Third party dependencies retain their respective licenses.

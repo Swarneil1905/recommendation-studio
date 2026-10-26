@@ -1,8 +1,11 @@
 import { Component, signal, OnInit } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { IconComponent } from "./icon";
+import { ProductImageComponent } from "./product-image";
 import { api } from "./api";
 interface Product {
+  kind?: string;
+  color?: string;
   id: string;
   name: string;
   category: string;
@@ -22,10 +25,11 @@ interface Catalog {
 @Component({
   selector: "discover-studio",
   standalone: true,
-  imports: [FormsModule, IconComponent],
+  imports: [FormsModule, IconComponent, ProductImageComponent],
   templateUrl: "./discover.html",
 })
 export class DiscoverComponent implements OnInit {
+  layout = signal<"grid" | "table">("grid");
   query = "";
   category = "All objects";
   budget = 100000;
@@ -46,6 +50,9 @@ export class DiscoverComponent implements OnInit {
   appliedQuery = signal("");
   request = 0;
   ngOnInit() {
+    const params = new URLSearchParams(location.search);
+    this.query = (params.get("q") || "").slice(0, 300);
+    this.importing.set(params.get("import") === "1");
     void this.search();
   }
   params(

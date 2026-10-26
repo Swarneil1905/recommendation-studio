@@ -1,0 +1,198 @@
+<a class="skip-link" [href]="skipHref">Skip to content</a> @if(workspace){
+<main id="main"><discover-studio /></main>
+}@else{
+<div class="home catalog-home">
+  <header class="site-header wrap">
+    <a class="wordmark" href="/" aria-label="Recommendation Studio home"
+      ><span class="catalog-mark"><i></i><i></i><i></i><i></i></span
+      ><span>Recommendation<small>STUDIO</small></span></a
+    ><button
+      class="menu-toggle"
+      (click)="menu.set(!menu())"
+      [attr.aria-expanded]="menu()"
+      aria-controls="home-nav"
+    >
+      {{menu() ? 'Close' : 'Menu'}}<app-icon name="grid" />
+    </button>
+    <nav id="home-nav" aria-label="Main navigation" [class.open]="menu()">
+      <a href="#product" (click)="menu.set(false)">Explore</a
+      ><a href="#how-it-works" (click)="menu.set(false)">How it works</a
+      ><a href="#questions" (click)="menu.set(false)">Questions</a
+      ><a class="nav-cta" href="/workspace"
+        >Open workspace<app-icon name="arrow"
+      /></a>
+    </nav>
+  </header>
+  <main id="main">
+    <section class="catalog-hero wrap" id="product">
+      <p class="overline">PRODUCT DISCOVERY, WITH THE REASONING INCLUDED</p>
+      <h1>Good products.<br /><span>Better matches.</span></h1>
+      <p class="hero-description">
+        See how words become recommendations. Explore a visual catalog, refine
+        what matters, and understand why each product appears.
+      </p>
+      <div class="cta-row">
+        <a class="button solid" href="/workspace"
+          >Explore the sample catalog<app-icon name="arrow" /></a
+        ><a class="button quiet" href="/workspace?import=1"
+          >Bring your own products</a
+        >
+      </div>
+      <p class="hero-note">
+        No sign up. Your own catalog, or a sample to get started.
+      </p>
+      <div class="catalog-preview">
+        <div class="preview-command">
+          <span><app-icon name="search" />{{queries[example()]}}</span
+          ><a [href]="searchUrl()" aria-label="Run this search in the workspace"
+            ><app-icon name="arrow"
+          /></a>
+        </div>
+        <div
+          class="query-presets"
+          role="group"
+          aria-label="Preview a product collection"
+        >
+          @for(q of queries; track q; let i=$index){<button
+            [class.active]="example()===i"
+            [attr.aria-pressed]="example()===i"
+            (click)="example.set(i)"
+          >
+            {{q}}</button
+          >}
+        </div>
+        <div class="preview-products" aria-live="polite">
+          @for(p of previews[example()]; track p.id){<a
+            class="preview-product"
+            [href]="searchUrl()"
+            ><product-image [id]="p.id" [label]="p.name" />
+            <div>
+              <span>{{p.category}}</span>
+              <h2>{{p.name}}</h2>
+              <strong>${{p.price}}</strong>
+            </div></a
+          >}
+        </div>
+        <div class="preview-caption">
+          <span>Illustrative collections from the sample catalog</span
+          ><a [href]="searchUrl()"
+            >Run a live search<app-icon name="arrow"
+          /></a>
+        </div>
+      </div>
+    </section>
+    <section class="section explanation wrap">
+      <div>
+        <p class="overline">BUILT FOR EXPLORATION</p>
+        <h2>Search is a starting point.<br />Preference adds context.</h2>
+      </div>
+      <div>
+        <p>
+          Try “a lightweight bag for my commute.” Then add a product to your
+          preference profile and run the search again. Compare the order with
+          the original results to see what changed.
+        </p>
+        <p>
+          Price, category, and stock still matter. Products that fail your
+          filters stay out of the results, even when their descriptions are
+          similar.
+        </p>
+        <a class="text-link" href="/workspace?q=lightweight%20bag%20commute"
+          >Try this search<app-icon name="arrow"
+        /></a>
+      </div>
+    </section>
+    <section class="workflow-section" id="how-it-works">
+      <div class="wrap">
+        <div class="section-intro">
+          <p class="overline">YOUR FIRST SEARCH</p>
+          <h2>A catalog. A question.<br />An answer you can inspect.</h2>
+        </div>
+        <div class="steps">
+          <article>
+            <span class="step-number">01 / LOAD</span>
+            <h3>Choose your catalog.</h3>
+            <p>
+              Use the sample products, or upload a JSON catalog with up to 500
+              of your own items.
+            </p>
+          </article>
+          <article>
+            <span class="step-number">02 / EXPLORE</span>
+            <h3>Describe what you need.</h3>
+            <p>
+              Search in plain language. Set a price ceiling and category, then
+              add preferences to test a shopper profile.
+            </p>
+          </article>
+          <article>
+            <span class="step-number">03 / COMPARE</span>
+            <h3>See what changed.</h3>
+            <p>
+              Compare baseline and personalized positions, inspect the matching
+              explanation, and export the results.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+    <section class="section faq wrap" id="questions">
+      <div>
+        <p class="overline">A CLOSER LOOK</p>
+        <h2>Know what you're testing.</h2>
+      </div>
+      <div>
+        <details>
+          <summary>Can I buy these products?</summary>
+          <p>
+            No. The sample catalog contains fictional products with generated
+            product imagery. This is a tool for exploring search and
+            recommendations, not a shop or checkout.
+          </p>
+        </details>
+        <details>
+          <summary>What does the similarity score mean?</summary>
+          <p>
+            It measures overlap between product descriptions, your query, and
+            selected preferences. It is not a confidence percentage, a quality
+            rating, or a prediction that someone will buy.
+          </p>
+        </details>
+        <details>
+          <summary>How do I use my own catalog?</summary>
+          <p>
+            Choose “Bring your own products” and download the JSON example. Each
+            item needs an id, name, category, price, stock, and description.
+            Upload up to 500 items in a file under 1 MB. Imported products use
+            category illustrations when no sample image applies.
+          </p>
+        </details>
+        <details>
+          <summary>Will my data be saved?</summary>
+          <p>
+            Uploaded catalogs are processed for your requests and remain in the
+            current browser tab. They do not replace the public catalog and are
+            cleared when you reload or leave. Export results before closing the
+            workspace.
+          </p>
+        </details>
+      </div>
+    </section>
+    <section class="closing wrap">
+      <div>
+        <p class="overline">SEE IT WITH YOUR OWN QUERY</p>
+        <h2>What are you looking for?</h2>
+      </div>
+      <a class="button solid" href="/workspace"
+        >Start exploring<app-icon name="arrow"
+      /></a>
+    </section>
+  </main>
+  <footer class="site-footer wrap">
+    <span>Recommendation Studio</span><span>Built by Swarneil Pradhan</span
+    ><a href="https://github.com/Swarneil1905/recommendation-studio"
+      >Source code<app-icon name="arrow"
+    /></a>
+  </footer>
+</div>
+}

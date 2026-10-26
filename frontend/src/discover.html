@@ -14,7 +14,7 @@
         <app-icon name="grid" />Catalog
       </button>
     </nav>
-    <span class="workspace-badge">Personal sandbox</span>
+    <span class="workspace-badge">Catalog workspace</span>
   </header>
   <div class="catalog-body">
     <div class="page-title">
@@ -161,6 +161,79 @@
           </p>
         </div>
         }
+        <div class="result-view-bar">
+          <span
+            >{{appliedQuery() ? 'Ranked by description and preferences' :
+            'Browse the catalog or enter a search query'}}</span
+          >
+          <div role="group" aria-label="Results view">
+            <button
+              [class.active]="layout() === 'grid'"
+              [attr.aria-pressed]="layout() === 'grid'"
+              (click)="layout.set('grid')"
+            >
+              Cards</button
+            ><button
+              [class.active]="layout() === 'table'"
+              [attr.aria-pressed]="layout() === 'table'"
+              (click)="layout.set('table')"
+            >
+              Table
+            </button>
+          </div>
+        </div>
+        @if(layout() === 'grid'){
+        <div class="product-grid">
+          @for(p of products(); track p.id; let i=$index){
+          <article
+            class="product-card"
+            [class.selected]="selected()?.id === p.id"
+          >
+            <button
+              class="product-open"
+              (click)="selected.set(p)"
+              [attr.aria-label]="'View details for ' + p.name"
+            >
+              <div class="card-image">
+                <product-image
+                  [id]="p.id"
+                  [label]="p.name"
+                  [sample]="!imported()"
+                  [kind]="p.kind || 'unknown'"
+                  [color]="p.color || '#879886'"
+                /><span class="card-rank"
+                  >{{(i+1).toString().padStart(2,'0')}}</span
+                >
+              </div>
+              <div class="card-copy">
+                <small>{{p.category}}</small>
+                <h3>{{p.name}}</h3>
+                <p>{{p.description}}</p>
+              </div>
+            </button>
+            <div class="card-meta">
+              <strong>${{p.price.toFixed(2)}}</strong
+              ><span>{{p.stock}} in stock</span
+              ><button
+                class="save-button"
+                [class.saved]="saved().includes(p.id)"
+                [attr.aria-pressed]="saved().includes(p.id)"
+                [attr.aria-label]="(saved().includes(p.id) ? 'Remove preference for ' : 'Prefer ') + p.name"
+                [disabled]="loading() || (!saved().includes(p.id) && saved().length >= 25)"
+                (click)="save(p.id)"
+              >
+                <app-icon [name]="saved().includes(p.id) ? 'check' : 'plus'" />
+              </button>
+            </div>
+            @if(compare()){
+            <div class="card-comparison">
+              Baseline #{{position(p.id)}}<span>Current #{{i+1}}</span>
+            </div>
+            }
+          </article>
+          }
+        </div>
+        }@else{
         <div class="table-scroll">
           <table>
             <thead>
@@ -182,8 +255,13 @@
                 <td class="rank">{{(i+1).toString().padStart(2,'0')}}</td>
                 <td>
                   <button class="product-name" (click)="selected.set(p)">
-                    <span class="product-initial"
-                      >{{p.category.slice(0,1)}}</span
+                    <span class="product-thumbnail"
+                      ><product-image
+                        [id]="p.id"
+                        [label]="p.name"
+                        [sample]="!imported()"
+                        [kind]="p.kind || 'unknown'"
+                        [color]="p.color || '#879886'" /></span
                     ><span
                       ><strong>{{p.name}}</strong
                       ><small>{{p.category}}<span>·</span>{{p.id}}</small></span
@@ -194,7 +272,9 @@
                 <td><span class="stock">{{p.stock}}</span></td>
                 <td>
                   <div class="score">
-                    <span>{{score(p.score)}}</span
+                    <span
+                      >{{appliedQuery() || saved().length ? score(p.score) :
+                      'Browse'}}</span
                     ><meter
                       min="0"
                       max="1"
@@ -230,7 +310,7 @@
             </tbody>
           </table>
         </div>
-        @if(!products().length && !loading() && !error()){
+        } @if(!products().length && !loading() && !error()){
         <div class="empty-results">
           <app-icon name="search" />
           <h3>No products match these filters.</h3>
@@ -270,6 +350,15 @@
         </section>
         @if(selected(); as p){
         <section class="detail-card">
+          <div class="detail-image">
+            <product-image
+              [id]="p.id"
+              [label]="p.name"
+              [sample]="!imported()"
+              [kind]="p.kind || 'unknown'"
+              [color]="p.color || '#879886'"
+            />
+          </div>
           <p class="eyebrow">RESULT DETAILS</p>
           <span class="detail-category">{{p.category}}</span>
           <h2>{{p.name}}</h2>

@@ -25,6 +25,21 @@ import { Component, Input } from "@angular/core";
       filter="url(#shadow)"
     />
     @switch (kind) {
+      @case ("unknown") {
+        <path
+          d="m100 130 100-50 100 50v130l-100 50-100-50Z"
+          fill="#d1dacd"
+          stroke="#8b9c86"
+          stroke-width="3"
+        />
+        <path
+          d="m100 130 100 50 100-50M200 180v130m-50-205 100 50v45"
+          fill="none"
+          stroke="#8b9c86"
+          stroke-width="3"
+        />
+      }
+
       @case ("bag") {
         <path
           d="M143 109V85c0-76 114-76 114 0v24"
