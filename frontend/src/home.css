@@ -552,6 +552,7 @@
 }
 .preview-product product-image {
   display: block;
+  height: auto;
   aspect-ratio: 1.5;
   overflow: hidden;
 }
