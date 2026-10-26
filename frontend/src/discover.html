@@ -1,0 +1,309 @@
+<div class="catalog-app">
+  <header class="catalog-header">
+    <a class="catalog-brand" href="/"
+      ><span class="brand-grid"><i></i><i></i><i></i><i></i></span
+      >Recommendation<span>Studio</span></a
+    >
+    <nav aria-label="Workspace navigation">
+      <button [class.active]="!importing()" (click)="importing.set(false)">
+        <app-icon name="search" />Search lab</button
+      ><button
+        [class.active]="importing()"
+        (click)="importing.set(!importing())"
+      >
+        <app-icon name="grid" />Catalog
+      </button>
+    </nav>
+    <span class="workspace-badge">Personal sandbox</span>
+  </header>
+  <div class="catalog-body">
+    <div class="page-title">
+      <div>
+        <p class="eyebrow">SEARCH &amp; DISCOVERY</p>
+        <h1>Find the right result.</h1>
+        <p>
+          Test a query, tune the filters and see how a preference profile
+          changes the ranking.
+        </p>
+      </div>
+      <button class="primary" (click)="importing.set(!importing())">
+        <app-icon name="upload" />Import catalog
+      </button>
+    </div>
+    @if(importing()){
+    <section class="import-panel">
+      <div>
+        <h2>Work with your products.</h2>
+        <p>
+          Upload a JSON array with id, name, category, price, stock and
+          description. Up to 500 products and 1 MB. Your catalog is sent to the
+          ranking API for this request and does not replace anyone else's data.
+        </p>
+        <small>Catalogs stay in this tab until you close or reload it.</small>
+      </div>
+      <div class="import-actions">
+        <label class="primary upload-button"
+          ><app-icon name="upload" />Choose JSON file<input
+            type="file"
+            accept=".json,application/json"
+            (change)="onImport($event)"
+            [disabled]="loading()"
+            aria-label="Import JSON catalog" /></label
+        ><button class="secondary" (click)="template()">
+          <app-icon name="download" />Download example</button
+        >@if(imported()){<button
+          class="text-button"
+          (click)="useExample()"
+          [disabled]="loading()"
+        >
+          Return to example catalog</button
+        >}
+      </div>
+    </section>
+    }
+    <div class="source-bar">
+      <span class="source-icon"><app-icon name="grid" /></span>
+      <div>
+        <strong>{{source()}}</strong
+        ><span
+          >{{total()}} products<span class="source-dot">·</span>{{imported() ?
+          'Your uploaded data' : 'Fictional products for testing'}}</span
+        >
+      </div>
+      <code>{{version() || 'Connecting...'}}</code
+      ><span class="api-status"
+        ><i [class.offline]="!!error()"></i>{{loading() ? "Connecting..." :
+        error() ? "Request needs attention" : "Ranking API connected"}}</span
+      >
+    </div>
+    <section class="query-panel">
+      <form (submit)="$event.preventDefault(); search()">
+        <label for="query">Search query</label>
+        <div class="query-input">
+          <app-icon name="search" /><input
+            id="query"
+            name="query"
+            [(ngModel)]="query"
+            placeholder="Try: a lightweight bag for my commute"
+            maxlength="300"
+          /><button class="primary" type="submit" [disabled]="loading()">
+            {{loading() ? 'Running...' : 'Run search'}}<app-icon name="arrow" />
+          </button>
+        </div>
+      </form>
+      <div class="filter-row">
+        <label for="category"
+          >Category<select
+            id="category"
+            [(ngModel)]="category"
+            (change)="search()"
+          >
+            <option>All objects</option>
+            @for(c of categories(); track c){
+            <option [value]="c">{{c}}</option>
+            }
+          </select></label
+        ><label for="budget"
+          >Maximum price<select
+            id="budget"
+            [(ngModel)]="budget"
+            (change)="search()"
+          >
+            <option [ngValue]="100000">Any price</option>
+            <option [ngValue]="200">$200</option>
+            <option [ngValue]="75">$75</option>
+            <option [ngValue]="40">$40</option>
+          </select></label
+        ><span class="stock-filter"><app-icon name="check" />In stock only</span
+        ><button
+          class="text-button"
+          (click)="resetFilters()"
+          [disabled]="loading()"
+        >
+          Reset filters</button
+        ><label class="compare-toggle"
+          ><input type="checkbox" [(ngModel)]="compare" />Compare ranking</label
+        >
+      </div>
+    </section>
+    @if(error()){
+    <div class="error" role="alert">
+      {{error()}}<button (click)="search()" [disabled]="loading()">
+        Retry search
+      </button>
+    </div>
+    }
+    <div class="results-layout">
+      <section class="results-panel" [attr.aria-busy]="loading()">
+        <div class="results-heading">
+          <div>
+            <h2>Search results <span>{{products().length}}</span></h2>
+            <p>
+              {{appliedQuery() ? 'Results for "' + appliedQuery() + '"' : 'All
+              available products'}}
+            </p>
+          </div>
+          <button
+            class="secondary"
+            (click)="exportResults()"
+            [disabled]="loading() || !products().length"
+          >
+            <app-icon name="download" />Export
+          </button>
+        </div>
+        @if(compare()){
+        <div class="compare-note">
+          <app-icon name="tune" />
+          <p>
+            Baseline is the query alone. Save products to build a preference
+            profile, then compare their positions. Similarity is a match score,
+            not a probability.
+          </p>
+        </div>
+        }
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Rank</th>
+                <th scope="col">Product</th>
+                <th scope="col">Price</th>
+                <th scope="col">Stock</th>
+                <th scope="col">Similarity</th>
+                @if(compare()){
+                <th scope="col">Baseline rank</th>
+                }
+                <th scope="col"><span class="sr-only">Preference</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for(p of products(); track p.id; let i = $index){
+              <tr [class.selected]="selected()?.id === p.id">
+                <td class="rank">{{(i+1).toString().padStart(2,'0')}}</td>
+                <td>
+                  <button class="product-name" (click)="selected.set(p)">
+                    <span class="product-initial"
+                      >{{p.category.slice(0,1)}}</span
+                    ><span
+                      ><strong>{{p.name}}</strong
+                      ><small>{{p.category}}<span>·</span>{{p.id}}</small></span
+                    >
+                  </button>
+                </td>
+                <td class="numeric">${{p.price.toFixed(2)}}</td>
+                <td><span class="stock">{{p.stock}}</span></td>
+                <td>
+                  <div class="score">
+                    <span>{{score(p.score)}}</span
+                    ><meter
+                      min="0"
+                      max="1"
+                      [value]="p.score"
+                      [attr.aria-label]="'Similarity for ' + p.name"
+                    ></meter>
+                  </div>
+                </td>
+                @if(compare()){
+                <td class="baseline-rank">
+                  {{position(p.id)}}<span
+                    >{{position(p.id) === i+1 ? 'same' : position(p.id) > i+1 ?
+                    'moved up' : 'moved down'}}</span
+                  >
+                </td>
+                }
+                <td>
+                  <button
+                    class="save-button"
+                    [class.saved]="saved().includes(p.id)"
+                    [disabled]="loading() || (!saved().includes(p.id) && saved().length >= 25)"
+                    [attr.aria-label]="(saved().includes(p.id) ? 'Remove preference for ' : 'Prefer ') + p.name"
+                    [attr.aria-pressed]="saved().includes(p.id)"
+                    (click)="save(p.id)"
+                  >
+                    <app-icon
+                      [name]="saved().includes(p.id) ? 'check' : 'plus'"
+                    />
+                  </button>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if(!products().length && !loading() && !error()){
+        <div class="empty-results">
+          <app-icon name="search" />
+          <h3>No products match these filters.</h3>
+          <p>Try another category or increase the maximum price.</p>
+          <button class="secondary" (click)="resetFilters()">
+            Reset filters
+          </button>
+        </div>
+        }
+        <div class="results-footer">
+          <span
+            >{{loading() ? 'Updating results...' : error() ? 'Results
+            unavailable' : 'Stock and price filters applied'}}</span
+          ><span>{{elapsed() ? elapsed() + ' ms round trip' : 'Ready'}}</span>
+        </div>
+      </section>
+      <aside class="result-inspector">
+        <section class="profile-card">
+          <div class="panel-label">
+            <app-icon name="tune" />
+            <h2>Preference profile</h2>
+            <span>{{saved().length}} / 25</span>
+          </div>
+          <p>
+            Add products with the plus button to test recommendations for a
+            shopper with similar interests.
+          </p>
+          @if(saved().length){<button
+            class="clear-profile"
+            (click)="clearProfile()"
+            [disabled]="loading()"
+          >
+            Clear {{saved().length}} preferences<app-icon
+              name="reset"
+            /></button
+          >}@else{<span class="profile-empty">No preferences selected</span>}
+        </section>
+        @if(selected(); as p){
+        <section class="detail-card">
+          <p class="eyebrow">RESULT DETAILS</p>
+          <span class="detail-category">{{p.category}}</span>
+          <h2>{{p.name}}</h2>
+          <p class="description">{{p.description}}</p>
+          <div class="detail-stats">
+            <div>
+              <span>Price</span><strong>${{p.price.toFixed(2)}}</strong>
+            </div>
+            <div><span>Available stock</span><strong>{{p.stock}}</strong></div>
+          </div>
+          <div class="reason">
+            <app-icon name="info" />
+            <div>
+              <strong>Why it appears</strong>
+              <p>{{p.reason}}</p>
+            </div>
+          </div>
+          <button
+            class="secondary"
+            (click)="save(p.id)"
+            [disabled]="loading() || (!saved().includes(p.id) && saved().length >= 25)"
+          >
+            <app-icon
+              [name]="saved().includes(p.id) ? 'check' : 'plus'"
+            />{{saved().includes(p.id) ? 'Remove preference' : 'Add to
+            preference profile'}}
+          </button>
+        </section>
+        }
+      </aside>
+    </div>
+    <footer class="catalog-footer">
+      <span>Content similarity ranking · Inventory aware filtering</span
+      ><span>Session data stays in this tab</span>
+    </footer>
+  </div>
+</div>

@@ -53,4 +53,17 @@ else:
     assert all(p["price"] <= 40 and p["category"] == "Workspace" for p in json.loads(body)["products"])
     status, _, _ = request("/api/catalog?budget=NaN")
     assert status == 400
+    custom = [
+        {"id":"custom-coffee", "name":"Coffee mug", "category":"Kitchen", "price":20, "stock":4, "description":"A ceramic coffee mug"},
+        {"id":"custom-bag", "name":"Laptop bag", "category":"Bags", "price":50, "stock":3, "description":"Canvas bag for the daily commute"},
+        {"id":"sold-out", "name":"Coffee cup", "category":"Kitchen", "price":10, "stock":0, "description":"Coffee cup"},
+    ]
+    status, body, _ = request("/api/catalog/preview?q=coffee&budget=25", json.dumps(custom).encode(), {"Content-Type":"application/json"})
+    imported = json.loads(body)
+    assert status == 200 and [p["id"] for p in imported["products"]] == ["custom-coffee"], (status, body)
+    assert set(imported["categories"]) == {"Bags","Kitchen"}
+    status, body, _ = request("/api/catalog/preview", b"[]", {"Content-Type":"application/json"})
+    assert status == 400, (status, body)
+    status, body, _ = request("/api/catalog?q=desk%20lamp")
+    assert status == 200 and json.loads(body)["products"][0]["id"] == "desk-lamp"
 print(kind + ": gateway, security headers, health and application flow passed")

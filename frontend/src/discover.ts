@@ -1,13 +1,6 @@
-import {
-  Component,
-  signal,
-  OnInit,
-  ViewChild,
-  ElementRef,
-} from "@angular/core";
+import { Component, signal, OnInit } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { IconComponent } from "./icon";
-import { ProductArtComponent } from "./art";
 import { api } from "./api";
 interface Product {
   id: string;
@@ -15,271 +8,221 @@ interface Product {
   category: string;
   price: number;
   stock: number;
-  kind: string;
-  color: string;
-  background: string;
   description: string;
-  reason: string;
   score: number;
+  reason: string;
 }
 interface Catalog {
   products: Product[];
+  categories: string[];
+  total_items: number;
   method: string;
   catalog_version: string;
 }
 @Component({
   selector: "discover-studio",
   standalone: true,
-  imports: [FormsModule, IconComponent, ProductArtComponent],
-  template: `
-    <section class="workspace discover">
-      <div class="location-row">
-        <span>Discovery studio</span
-        ><span class="status-label">Sample catalog · Live ranking API</span>
-      </div>
-      <div class="page-heading">
-        <div>
-          <p class="eyebrow">FEWER THINGS. BETTER CHOICES.</p>
-          <h1>Find your everyday essentials.</h1>
-          <p class="lede">
-            Tell us what matters. Explore a considered selection, with a reason
-            for every match.
-          </p>
-        </div>
-        <span class="edition">03 / DISCOVER</span>
-      </div>
-      <form class="search-form" (submit)="$event.preventDefault(); search()">
-        <app-icon name="search" /><label class="sr-only" for="product-search"
-          >Describe what you need</label
-        ><input
-          id="product-search"
-          [(ngModel)]="query"
-          name="query"
-          placeholder="Something useful for a quiet morning at home"
-          maxlength="300"
-        /><button class="primary green" type="submit" [disabled]="loading()">
-          Find my selection <app-icon name="arrow" />
-        </button>
-      </form>
-      <div class="suggestions">
-        <span>Try a direction</span>
-        @for (s of suggestions; track s) {
-          <button class="suggestion" (click)="query = s; search()">
-            {{ s }} <span>↗</span>
-          </button>
-        }
-      </div>
-      <div class="catalog-toolbar">
-        <div class="category-tabs" aria-label="Product category">
-          @for (c of categories; track c) {
-            <button
-              [class.active]="category === c"
-              [attr.aria-pressed]="category === c"
-              (click)="category = c; search()"
-            >
-              {{ c }}
-            </button>
-          }
-        </div>
-        <div class="catalog-options">
-          <label for="budget">Budget</label
-          ><select id="budget" [(ngModel)]="budget" (change)="search()">
-            <option [ngValue]="200">Up to $200</option>
-            <option [ngValue]="75">Up to $75</option>
-            <option [ngValue]="40">Up to $40</option></select
-          ><button
-            class="text-button"
-            (click)="savedOnly = !savedOnly; search()"
-            [attr.aria-pressed]="savedOnly"
-          >
-            <app-icon name="heart" />Saved {{ saved.size }}
-          </button>
-        </div>
-      </div>
-      <div class="catalog-caption">
-        <span>{{
-          loading()
-            ? "Finding your selection…"
-            : products().length + " considered choices"
-        }}</span
-        ><button
-          class="text-button"
-          (click)="showMethod.set(!showMethod())"
-          [attr.aria-expanded]="showMethod()"
-        >
-          <app-icon name="info" />How recommendations work
-        </button>
-      </div>
-      @if (showMethod()) {
-        <div class="method-note">
-          The API compares your words and saved items with product descriptions
-          using TF IDF cosine similarity. Budget, category and stock are hard
-          filters. These are fictional products and original illustrations.
-          Similarity scores are not probabilities.
-        </div>
-      }
-      @if (error()) {
-        <div class="error" role="alert">
-          {{ error() }}
-          <button class="text-button" (click)="search()">Try again</button>
-        </div>
-      }
-      <div class="product-grid" [attr.aria-busy]="loading()">
-        @for (p of products(); track p.id) {
-          <article class="product-card">
-            <div class="product-visual" [style.background]="p.background">
-              <button
-                class="save-button"
-                [class.saved]="saved.has(p.id)"
-                [attr.aria-label]="
-                  (saved.has(p.id) ? 'Unsave ' : 'Save ') + p.name
-                "
-                [attr.aria-pressed]="saved.has(p.id)"
-                (click)="save(p.id)"
-              >
-                <app-icon
-                  [name]="saved.has(p.id) ? 'check' : 'heart'"
-                /></button
-              ><button
-                class="product-image-button"
-                (click)="openProduct(p)"
-                [attr.aria-label]="'View ' + p.name"
-              >
-                <product-art
-                  [kind]="p.kind"
-                  [color]="p.color"
-                  [label]="p.name + ' illustration'"
-                /></button
-              ><span class="stock-label">{{ p.stock }} available</span>
-            </div>
-            <div class="product-title">
-              <button (click)="openProduct(p)">{{ p.name }}</button
-              ><span>&#36;{{ p.price }}</span>
-            </div>
-            <p class="product-category">{{ p.category }}</p>
-            <p class="recommendation-reason">
-              <span class="reason-dot"></span>{{ p.reason }}
-            </p>
-          </article>
-        }
-      </div>
-      @if (!loading() && !products().length && !error()) {
-        <div class="empty-state">
-          <app-icon name="search" />
-          <h3>No items match these filters.</h3>
-          <p>Try a broader category or a higher budget.</p>
-          <button class="secondary" (click)="reset()">Reset filters</button>
-        </div>
-      }
-      <div class="catalog-footnote">
-        <app-icon name="bag" />
-        <p>
-          Explore and save. This is a recommendation workspace, so there is no
-          checkout or payment collection.
-        </p>
-      </div>
-    </section>
-    <dialog
-      #productDialog
-      class="product-dialog"
-      aria-labelledby="product-dialog-title"
-      (close)="selected.set(null)"
-    >
-      @if (selected()) {
-        <button
-          class="dialog-close secondary"
-          (click)="productDialog.close()"
-          aria-label="Close product details"
-        >
-          <app-icon name="close" />
-        </button>
-        <div class="dialog-art" [style.background]="selected()!.background">
-          <product-art
-            [kind]="selected()!.kind"
-            [color]="selected()!.color"
-            [label]="selected()!.name"
-          />
-        </div>
-        <div class="dialog-copy">
-          <span class="eyebrow">{{ selected()!.category }}</span>
-          <h2 id="product-dialog-title">{{ selected()!.name }}</h2>
-          <p>{{ selected()!.description }}</p>
-          <p class="product-price">&#36;{{ selected()!.price }}</p>
-          <div class="method-note">{{ selected()!.reason }}</div>
-          <button class="primary green" (click)="save(selected()!.id)">
-            <app-icon name="heart" />{{
-              saved.has(selected()!.id)
-                ? "Remove from saved"
-                : "Save to my selection"
-            }}
-          </button>
-          <p class="micro">
-            Fictional sample product. No purchase is available.
-          </p>
-        </div>
-      }
-    </dialog>
-  `,
+  imports: [FormsModule, IconComponent],
+  templateUrl: "./discover.html",
 })
 export class DiscoverComponent implements OnInit {
-  @ViewChild("productDialog") dialog!: ElementRef<HTMLDialogElement>;
-  openProduct(p: Product) {
-    this.selected.set(p);
-    this.dialog.nativeElement.showModal();
-  }
   query = "";
   category = "All objects";
-  budget = 200;
-  savedOnly = false;
+  budget = 100000;
   loading = signal(false);
   error = signal("");
   products = signal<Product[]>([]);
+  baseline = signal<Product[]>([]);
   selected = signal<Product | null>(null);
-  showMethod = signal(false);
-  saved = new Set<string>();
+  saved = signal<string[]>([]);
+  compare = signal(false);
+  importing = signal(false);
+  imported = signal<unknown[] | null>(null);
+  source = signal("Example catalog");
+  categories = signal<string[]>([]);
+  total = signal(0);
+  version = signal("");
+  elapsed = signal(0);
+  appliedQuery = signal("");
   request = 0;
-  categories = ["All objects", "Carry", "Workspace", "Home"];
-  suggestions = ["A lighter commute", "A focused workspace", "Slow mornings"];
   ngOnInit() {
-    try {
-      const ids = JSON.parse(localStorage.getItem("recommendation-studio-saved") || "[]");
-      if (Array.isArray(ids))
-        this.saved = new Set(ids.filter((x) => typeof x === "string"));
-    } catch {}
     void this.search();
   }
+  params(
+    saved: string[],
+    query = this.query,
+    category = this.category,
+    budget = this.budget,
+  ) {
+    return new URLSearchParams({
+      q: query,
+      category,
+      budget: String(budget),
+      saved: saved.join(","),
+    }).toString();
+  }
+  fetchCatalog(saved: string[]) {
+    const data = this.imported();
+    return data
+      ? api<Catalog>("catalog/preview?" + this.params(saved), data)
+      : api<Catalog>("catalog?" + this.params(saved));
+  }
   async search() {
+    const n = ++this.request;
+    const start = performance.now();
+    const query = this.query;
+    this.loading.set(true);
+    this.error.set("");
+    try {
+      const [result, base] = await Promise.all([
+        this.fetchCatalog(this.saved()),
+        this.saved().length ? this.fetchCatalog([]) : Promise.resolve(null),
+      ]);
+      if (n !== this.request) return;
+      this.apply(result);
+      this.baseline.set(base?.products || result.products);
+      this.appliedQuery.set(query);
+      this.elapsed.set(Math.round(performance.now() - start));
+    } catch (e) {
+      if (n === this.request) {
+        this.error.set((e as Error).message);
+        this.products.set([]);
+        this.baseline.set([]);
+        this.selected.set(null);
+      }
+    } finally {
+      if (n === this.request) this.loading.set(false);
+    }
+  }
+  apply(result: Catalog) {
+    this.products.set(result.products);
+    this.categories.set(result.categories);
+    this.total.set(result.total_items);
+    this.version.set(result.catalog_version);
+    this.selected.set(
+      result.products.find((x) => x.id === this.selected()?.id) ||
+        result.products[0] ||
+        null,
+    );
+  }
+  save(id: string) {
+    if (this.loading()) return;
+    this.saved.update((ids) =>
+      ids.includes(id)
+        ? ids.filter((x) => x !== id)
+        : ids.length < 25
+          ? [...ids, id]
+          : ids,
+    );
+    void this.search();
+  }
+  clearProfile() {
+    this.saved.set([]);
+    void this.search();
+  }
+  resetFilters() {
+    this.query = "";
+    this.category = "All objects";
+    this.budget = 100000;
+    void this.search();
+  }
+  async onImport(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    if (file.size > 1048576) {
+      this.error.set("Choose a JSON catalog under 1 MB.");
+      return;
+    }
     const n = ++this.request;
     this.loading.set(true);
     this.error.set("");
     try {
-      const q = new URLSearchParams({
-        q: this.query,
-        category: this.category,
-        budget: String(this.budget),
-        saved: [...this.saved].join(","),
-        saved_only: String(this.savedOnly),
-      });
-      const result = await api<Catalog>("catalog?" + q);
-      if (n === this.request) this.products.set(result.products);
+      const data: unknown = JSON.parse(await file.text());
+      if (!Array.isArray(data))
+        throw new Error(
+          "The file must contain an array of products. Download the example for the format.",
+        );
+      const result = await api<Catalog>(
+        "catalog/preview?" + this.params([], "", "All objects", 100000),
+        data,
+      );
+      if (n !== this.request) return;
+      this.imported.set(data);
+      this.source.set(file.name);
+      this.query = "";
+      this.category = "All objects";
+      this.budget = 100000;
+      this.saved.set([]);
+      this.appliedQuery.set("");
+      this.apply(result);
+      this.baseline.set(result.products);
+      this.importing.set(false);
+      this.elapsed.set(0);
     } catch (e) {
       if (n === this.request) this.error.set((e as Error).message);
     } finally {
       if (n === this.request) this.loading.set(false);
     }
   }
-  save(id: string) {
-    this.saved.has(id) ? this.saved.delete(id) : this.saved.add(id);
-    try {
-      localStorage.setItem("recommendation-studio-saved", JSON.stringify([...this.saved]));
-    } catch {}
-    void this.search();
+  useExample() {
+    this.imported.set(null);
+    this.source.set("Example catalog");
+    this.saved.set([]);
+    this.resetFilters();
   }
-  reset() {
-    this.query = "";
-    this.category = "All objects";
-    this.budget = 200;
-    this.savedOnly = false;
-    void this.search();
+  download(data: unknown, name: string) {
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  template() {
+    this.download(
+      [
+        {
+          id: "coffee-01",
+          name: "Stoneware coffee mug",
+          category: "Kitchen",
+          price: 24,
+          stock: 18,
+          description: "A ceramic mug for hot coffee and tea.",
+        },
+        {
+          id: "bag-01",
+          name: "Canvas commuter bag",
+          category: "Bags",
+          price: 48,
+          stock: 12,
+          description:
+            "Lightweight canvas shoulder bag with room for a laptop.",
+        },
+      ],
+      "catalog-template.json",
+    );
+  }
+  exportResults() {
+    this.download(
+      {
+        query: this.appliedQuery(),
+        source: this.source(),
+        catalog_version: this.version(),
+        profile: this.saved(),
+        results: this.products(),
+        baseline: this.baseline(),
+      },
+      "ranking-results.json",
+    );
+  }
+  position(id: string) {
+    return this.baseline().findIndex((x) => x.id === id) + 1;
+  }
+  score(value: number) {
+    return value.toFixed(3);
   }
 }

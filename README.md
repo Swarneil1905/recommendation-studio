@@ -4,11 +4,13 @@ Explore a product catalog with natural language search, inventory filters and re
 
 [Live demo](https://recommendation-studio-production.up.railway.app) · [CI](https://github.com/Swarneil1905/recommendation-studio/actions) · [Architecture](docs/architecture.md) · [Verification notes](docs/verification.md) · [MIT license](LICENSE)
 
+Import a JSON catalog of up to 500 products, test search and inventory filters, build a preference profile and compare the resulting positions with the query-only baseline. Imports are request scoped and never replace the shared example catalog. Export the results as JSON.
+
 ## What you can do
 
 - Search product descriptions and browse by category or budget.
-- Save products locally to influence later recommendations.
-- Filter to saved items and inspect product details.
+- Add up to 25 products to a temporary preference profile.
+- Compare personalized positions against a query-only baseline and inspect product details.
 - Exclude unavailable inventory before returning results.
 
 The included catalog contains eight fictional products, including an out of stock test item. There is no checkout, external commerce feed or user account service. The ranking system runs locally without paid AI APIs.
@@ -23,7 +25,7 @@ Angular interface → Java catalog API → Go ranking service
 
 | Component | Responsibility |
 | --- | --- |
-| Angular | Search, filters, saved products and accessible detail dialogs |
+| Angular | Catalog imports, search filters, ranking comparison and result inspection |
 | Java 21 | Catalog validation, inventory rules and HTTP API |
 | Go | TF IDF ranking, saved product profiles and bounded result caching |
 | Nginx | Frontend hosting and API proxy in Docker |

@@ -55,7 +55,40 @@ public final class CatalogServer {
         .toList();
   }
 
-  static Object catalog(Map<String, String> q) throws Exception {
+  static Object catalog(Map<String, String> q) throws Exception { return catalog(q, null); }
+
+  static List<Product> parseCatalog(byte[] data) {
+    if (data.length > 1048576) throw new IllegalArgumentException("Catalog must be under 1 MB");
+    try {
+      JsonNode root = JSON.readTree(data);
+      if (root == null || !root.isArray() || root.isEmpty() || root.size() > 500)
+        throw new IllegalArgumentException("Provide an array of 1 to 500 products");
+      Set<String> ids = new HashSet<>();
+      for (JsonNode item : root) {
+        for (String field : List.of("id", "name", "category", "description")) {
+          JsonNode value = item.path(field);
+          int max = field.equals("description") ? 2000 : field.equals("name") ? 120 : 60;
+          if (!value.isTextual() || value.asText().isBlank() || value.asText().length() > max)
+            throw new IllegalArgumentException("Each product needs a valid " + field + " (max " + max + " characters)");
+        }
+        String text = item.path("name").asText() + " " + item.path("category").asText() + " " + item.path("description").asText();
+        if (text.getBytes(StandardCharsets.UTF_8).length > 4000)
+          throw new IllegalArgumentException("Product text must be under 4000 UTF-8 bytes");
+        String id = item.path("id").asText();
+        if (!id.matches("[-A-Za-z0-9_]+") || !ids.add(id))
+          throw new IllegalArgumentException("Product IDs must be unique and use letters, numbers, underscores or hyphens");
+        if (!item.path("price").isNumber() || !Double.isFinite(item.path("price").asDouble())
+            || item.path("price").asDouble() < 0 || item.path("price").asDouble() > 100000
+            || !item.path("stock").isIntegralNumber() || !item.path("stock").canConvertToInt()
+            || item.path("stock").asInt() < 0)
+          throw new IllegalArgumentException("Each product needs a price from 0 to 100000 and nonnegative integer stock");
+      }
+      return Arrays.asList(JSON.treeToValue(root, Product[].class));
+    } catch (IllegalArgumentException e) { throw e; }
+    catch (Exception e) { throw new IllegalArgumentException("Catalog must be a valid JSON product array"); }
+  }
+
+  static Object catalog(Map<String, String> q, byte[] data) throws Exception {
     String query = q.getOrDefault("q", "").strip(),
         category = q.getOrDefault("category", "All objects");
     double budget;
@@ -66,8 +99,7 @@ public final class CatalogServer {
     }
     if (query.length() > 300 || !Double.isFinite(budget) || budget < 0 || budget > 100000)
       throw new IllegalArgumentException("Invalid query or budget");
-    if (!Set.of("All objects", "Carry", "Workspace", "Home").contains(category))
-      throw new IllegalArgumentException("Unknown category");
+    if (category.length() > 60) throw new IllegalArgumentException("Category is too long");
     String savedText = q.getOrDefault("saved", "");
     if (savedText.length() > 2000) throw new IllegalArgumentException("Too many saved items");
     Set<String> saved = new TreeSet<>(Arrays.asList(savedText.split(",")));
@@ -76,22 +108,11 @@ public final class CatalogServer {
     String only = q.getOrDefault("saved_only", "false");
     if (!only.equals("true") && !only.equals("false"))
       throw new IllegalArgumentException("Invalid saved filter");
-    // Read canonical inventory on every request. Ranking cache never determines stock.
-    byte[] data =
-        Files.readAllBytes(Path.of(System.getenv().getOrDefault("CATALOG_PATH", "catalog.json")));
-    if (data.length > 1048576) throw new IllegalStateException("Catalog exceeds limit");
-    List<Product> all = Arrays.asList(JSON.readValue(data, Product[].class));
-    if (all.isEmpty() || all.size() > 500) throw new IllegalStateException("Invalid catalog size");
-    Set<String> ids = new HashSet<>();
-    for (Product p : all)
-      if (p.id() == null
-          || p.id().isBlank()
-          || !ids.add(p.id())
-          || p.name() == null
-          || p.description() == null
-          || p.stock() < 0
-          || !Double.isFinite(p.price())
-          || p.price() < 0) throw new IllegalStateException("Invalid catalog record");
+    // Imported catalogs are request scoped. They never replace the shared catalog.
+    if (data == null) data = Files.readAllBytes(Path.of(System.getenv().getOrDefault("CATALOG_PATH", "catalog.json")));
+    List<Product> all = parseCatalog(data);
+    if (!category.equals("All objects") && all.stream().noneMatch(p -> p.category().equals(category)))
+      throw new IllegalArgumentException("Unknown category");
     List<Map<String, String>> items =
         all.stream()
             .map(
@@ -135,6 +156,8 @@ public final class CatalogServer {
     return Map.of(
         "products",
         products,
+        "categories", all.stream().map(Product::category).distinct().sorted().toList(),
+        "total_items", all.size(),
         "method",
         ranked.path("method").asText(),
         "catalog_version",
@@ -155,12 +178,24 @@ public final class CatalogServer {
   }
 
   static void handle(HttpExchange x) throws java.io.IOException {
-    if (!x.getRequestMethod().equals("GET")) {
-      x.getResponseHeaders().set("Allow", "GET");
-      send(x, 405, Map.of("error", "Use GET"));
-      return;
-    }
     try {
+      String path = x.getRequestURI().getPath();
+      if (path.equals("/api/catalog/preview")) {
+        if (!x.getRequestMethod().equals("POST")) {
+          x.getResponseHeaders().set("Allow", "POST");
+          send(x, 405, Map.of("error", "Use POST")); return;
+        }
+        String contentType = x.getRequestHeaders().getFirst("Content-Type");
+        if (contentType == null || !contentType.split(";")[0].strip().equalsIgnoreCase("application/json")) {
+          send(x, 415, Map.of("error", "Use application/json")); return;
+        }
+        byte[] data = x.getRequestBody().readNBytes(1048577);
+        if (data.length > 1048576) { send(x, 413, Map.of("error", "Catalog must be under 1 MB")); return; }
+        send(x, 200, catalog(query(x.getRequestURI().getRawQuery()), data)); return;
+      }
+      if (!x.getRequestMethod().equals("GET")) {
+        x.getResponseHeaders().set("Allow", "GET"); send(x, 405, Map.of("error", "Use GET")); return;
+      }
       switch (x.getRequestURI().getPath()) {
         case "/api/health" -> {
           catalog(Map.of());
