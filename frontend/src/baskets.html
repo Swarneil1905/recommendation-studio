@@ -159,7 +159,7 @@
       </div>
       }
       <div class="opportunities">
-        @for(rule of r.rules; track key(rule)){
+        @for(rule of r.rules.slice(0,visibleCount()); track key(rule)){
         <article class="opportunity">
           <div class="pair">
             <div class="photo">
@@ -212,7 +212,18 @@
         </article>
         }
       </div>
-      <section class="evaluation">
+      <p class="fine">
+        Showing {{r.rules.length < visibleCount() ? r.rules.length :
+        visibleCount()}} of {{r.rules.length}} candidates. At most 200 are
+        returned.
+      </p>
+      @if (visibleCount() < r.rules.length) {<button
+        class="button"
+        (click)="visibleCount.set(visibleCount()+12)"
+      >
+        Show more candidates</button
+      >}
+      <section class="evaluation" id="evaluation">
         <span class="step">03 / CHECK THE SIGNAL</span>
         <h2>Does it recover held-out purchases?</h2>
         <p>

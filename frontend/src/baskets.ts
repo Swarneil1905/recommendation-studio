@@ -48,6 +48,7 @@ export class BasketComponent implements OnInit {
   busy = signal(false);
   error = signal("");
   notice = signal("");
+  visibleCount = signal(12);
   chosen = signal<string[]>([]);
   minCount = 10;
   confidence = 20;
@@ -66,6 +67,7 @@ export class BasketComponent implements OnInit {
     this.notice.set("");
   }
   resetReport() {
+    this.visibleCount.set(12);
     this.report.set(null);
     this.chosen.set([]);
     this.notice.set("");
