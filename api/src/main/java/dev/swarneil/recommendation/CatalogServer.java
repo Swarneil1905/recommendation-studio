@@ -180,6 +180,26 @@ public final class CatalogServer {
   static void handle(HttpExchange x) throws java.io.IOException {
     try {
       String path = x.getRequestURI().getPath();
+      if (path.equals("/api/baskets/analyze")) {
+        if (!x.getRequestMethod().equals("POST")) {
+          x.getResponseHeaders().set("Allow", "POST");
+          send(x, 405, Map.of("error", "Use POST")); return;
+        }
+        String type = x.getRequestHeaders().getFirst("Content-Type");
+        if (type == null || !type.split(";")[0].strip().equalsIgnoreCase("application/json")) {
+          send(x, 415, Map.of("error", "Use application/json")); return;
+        }
+        byte[] data = x.getRequestBody().readNBytes(1048577);
+        if (data.length > 1048576) { send(x, 413, Map.of("error", "Order data must be under 1 MB")); return; }
+        String url = System.getenv().getOrDefault("RANKER_URL", "http://127.0.0.1:8090");
+        HttpResponse<String> response = CLIENT.send(
+          HttpRequest.newBuilder(URI.create(url + "/baskets")).timeout(Duration.ofSeconds(8))
+            .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofByteArray(data)).build(),
+          HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200 && response.statusCode() != 400)
+          throw new IllegalStateException("Basket analysis unavailable");
+        send(x, response.statusCode(), JSON.readTree(response.body())); return;
+      }
       if (path.equals("/api/catalog/preview")) {
         if (!x.getRequestMethod().equals("POST")) {
           x.getResponseHeaders().set("Allow", "POST");

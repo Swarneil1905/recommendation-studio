@@ -66,4 +66,17 @@ else:
     assert status == 400, (status, body)
     status, body, _ = request("/api/catalog?q=desk%20lamp")
     assert status == 200 and json.loads(body)["products"][0]["id"] == "desk-lamp"
+status,body,_=request("/data/retail-sample.json")
+sample=json.loads(body)
+assert status==200 and len(sample["orders"])==2000 and len(sample["names"])==100,(status,len(body))
+assert all(set(order)=={"id","items"} for order in sample["orders"])
+status,body,_=request("/data/ATTRIBUTION.txt")
+assert status==200 and b"CC BY 4.0" in body,(status,body)
+orders=[{"id":str(i),"items":["a","b"] if i<20 else ["c"]} for i in range(40)]
+status,body,_=request("/api/baskets/analyze",json.dumps({"orders":orders,"min_count":5,"min_confidence":0.5,"min_lift":1.2}).encode(),{"Content-Type":"application/json"})
+result=json.loads(body)
+assert status==200 and result["orders"]==40, (status,body)
+assert len(result["rules"])==2 and result["rules"][0]["lift"]==2, result
+status,body,_=request("/api/baskets/analyze",b'{"orders":[]}',{"Content-Type":"application/json"})
+assert status==400,(status,body)
 print(kind + ": gateway, security headers, health and application flow passed")

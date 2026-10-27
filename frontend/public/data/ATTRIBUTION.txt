@@ -1,0 +1,17 @@
+Online Retail historical sample
+Source: Chen, D. (2015). Online Retail. UCI Machine Learning Repository.
+https://doi.org/10.24432/C5BW33
+https://archive.ics.uci.edu/dataset/352/online-retail
+License: Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/
+
+Adaptation: positive-quantity, positive-price merchandise lines from November
+2011. Cancellations and non-merchandise codes excluded. Orders projected onto
+the 100 most frequently ordered products that month. Keep projected baskets
+with 1 to 30 products; take the first 2,000 eligible invoices in ID order.
+Order IDs replaced with sequential sample IDs; descriptions title-cased.
+Customer IDs, countries, dates, quantities and prices are not included.
+This selection changes the distribution and is not representative of all
+customers or current demand. It must not be used to claim expected sales uplift.
+Rebuild with tools/prepare_retail_sample.py and the original UCI ZIP.
+Only this derived data is CC BY 4.0; original application code is MIT licensed.

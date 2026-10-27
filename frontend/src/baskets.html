@@ -1,0 +1,262 @@
+<div class="merchant">
+  <header class="merchant-nav">
+    <a href="/" class="logo">Recommendation <b>Studio</b></a>
+    <nav aria-label="Product navigation">
+      <span aria-current="page">Bundle finder</span
+      ><a href="/workspace?tool=catalog">Catalog search</a>
+    </nav>
+  </header>
+  <main>
+    <div class="intro">
+      <p class="eyebrow">FOR INDEPENDENT SHOPS</p>
+      <h1>Find the next product<br />to sell together.</h1>
+      <p>
+        Turn order history into a shortlist of cart add-ons. Every suggestion
+        includes the purchase evidence behind it.
+      </p>
+    </div>
+    <section class="input-card">
+      <div>
+        <span class="step">01 / ORDER HISTORY</span>
+        <h2>Start with purchases, not guesses.</h2>
+        <p>
+          Upload order IDs and product names. No customer names, email addresses
+          or payment details.
+        </p>
+      </div>
+      <div class="upload-actions">
+        <label class="button solid"
+          >Upload orders CSV<input
+            type="file"
+            accept=".csv,text/csv"
+            (change)="upload($event)"
+            [disabled]="busy()" /></label
+        ><button class="button" (click)="retailSample()" [disabled]="busy()">
+          Analyze real retail orders</button
+        ><button class="button" (click)="sample()" [disabled]="busy()">
+          Try 240 example orders</button
+        ><button class="link" (click)="template()">
+          Download CSV template
+        </button>
+      </div>
+      <p class="fine">
+        10 to 5,000 orders · Up to 200 products · 1 MB maximum · Quantities
+        count once per order. The three columns are order_id, product_id and
+        product_name.
+      </p>
+      @if(source()){
+      <div class="source">
+        <strong>{{source()}}</strong
+        ><span
+          >{{orders.length}} orders loaded. Data is processed for this request
+          and is not saved on the server.</span
+        >
+      </div>
+      } @if(source().startsWith('UCI')){
+      <p class="fine">
+        Historical purchases from November 2011, filtered to 100 popular
+        products and up to 2,000 orders. This sample is not current demand.
+        <a href="/data/ATTRIBUTION.txt" target="_blank" rel="noopener"
+          >Data source, selection and CC BY 4.0 attribution</a
+        >. Product photos were not included in the dataset.
+      </p>
+      }
+      <form (ngSubmit)="analyze()" class="thresholds">
+        <label
+          >Minimum paired orders<input
+            type="number"
+            [disabled]="busy()"
+            name="count"
+            [(ngModel)]="minCount"
+            (ngModelChange)="resetReport()"
+            min="2"
+            max="5000"
+            required /></label
+        ><label
+          >Minimum confidence (%)<input
+            type="number"
+            [disabled]="busy()"
+            name="confidence"
+            [(ngModel)]="confidence"
+            (ngModelChange)="resetReport()"
+            min="0"
+            max="100"
+            required /></label
+        ><label
+          >Minimum lift<input
+            type="number"
+            [disabled]="busy()"
+            name="lift"
+            [(ngModel)]="lift"
+            (ngModelChange)="resetReport()"
+            min="1"
+            max="10000"
+            step="0.1"
+            required /></label
+        ><button
+          class="button solid"
+          type="submit"
+          [disabled]="busy()||!orders.length"
+        >
+          {{busy()?'Analyzing orders...':'Find bundle opportunities'}}
+        </button>
+      </form>
+    </section>
+    @if(error()){
+    <p class="error" role="alert">{{error()}}</p>
+    }@if(notice()){
+    <p role="status" class="notice">{{notice()}}</p>
+    } @if(report(); as r){
+    <section class="report" aria-live="polite">
+      <div class="result-title">
+        <div>
+          <span class="step">02 / YOUR BUNDLE OPPORTUNITIES</span>
+          <h2>{{r.rules.length}} candidates meet your evidence thresholds</h2>
+          <p>
+            Based on {{r.orders}} distinct orders across {{r.products}}
+            products. Add candidates to your shortlist, then check stock and
+            margin before testing.
+          </p>
+        </div>
+        <button
+          class="button solid"
+          (click)="export()"
+          [disabled]="!chosen().length"
+        >
+          Export shortlist ({{chosen().length}})
+        </button>
+      </div>
+      <div class="metrics">
+        <div>
+          <strong>Confidence</strong>
+          <p>
+            Share of orders containing the anchor that also contained the
+            suggested product.
+          </p>
+        </div>
+        <div>
+          <strong>Lift</strong>
+          <p>
+            How much more often the pair occurs than if the products were
+            purchased independently. 1 means no association.
+          </p>
+        </div>
+        <div>
+          <strong>Support</strong>
+          <p>
+            Share of all uploaded orders containing both products. A large lift
+            with few orders can be misleading.
+          </p>
+        </div>
+      </div>
+      @if(!r.rules.length){
+      <div class="empty">
+        <h3>No supported bundles yet.</h3>
+        <p>
+          Add more order history or adjust the evidence thresholds. We do not
+          invent recommendations when no pair qualifies.
+        </p>
+      </div>
+      }
+      <div class="opportunities">
+        @for(rule of r.rules; track key(rule)){
+        <article class="opportunity">
+          <div class="pair">
+            <div class="photo">
+              @if(source().startsWith("Fictional")){<product-image
+                [id]="rule.anchor"
+                [label]="name(rule.anchor)"
+              />}@else{<span class="sku"
+                >{{rule.anchor}}<small>{{name(rule.anchor)}}</small></span
+              >}
+            </div>
+            <span class="plus">+</span>
+            <div class="photo">
+              @if(source().startsWith("Fictional")){<product-image
+                [id]="rule.product"
+                [label]="name(rule.product)"
+              />}@else{<span class="sku"
+                >{{rule.product}}<small>{{name(rule.product)}}</small></span
+              >}
+            </div>
+          </div>
+          <p class="eyebrow">WHEN A CUSTOMER BUYS {{name(rule.anchor)}}</p>
+          <h3>Suggest {{name(rule.product)}}</h3>
+          <p>
+            {{rule.count}} of {{rule.anchor_count}} anchor orders also included
+            this product.
+          </p>
+          <dl>
+            <div>
+              <dt>Confidence</dt>
+              <dd>{{rule.confidence*100|number:'1.0-1'}}%</dd>
+            </div>
+            <div>
+              <dt>Lift</dt>
+              <dd>{{rule.lift|number:'1.1-2'}}x</dd>
+            </div>
+            <div>
+              <dt>Support</dt>
+              <dd>{{rule.support*100|number:'1.0-1'}}%</dd>
+            </div>
+          </dl>
+          <button
+            class="button"
+            [class.selected]="chosen().includes(key(rule))"
+            [attr.aria-pressed]="chosen().includes(key(rule))"
+            (click)="toggle(rule)"
+          >
+            {{chosen().includes(key(rule))?'Added to shortlist':'Shortlist this
+            pair'}}
+          </button>
+        </article>
+        }
+      </div>
+      <section class="evaluation">
+        <span class="step">03 / CHECK THE SIGNAL</span>
+        <h2>Does it recover held-out purchases?</h2>
+        <p>
+          We rerun the same algorithm on a separate training subset, then hide
+          one product from each eligible test order. This measures retrieval on
+          your data, not future sales or causal uplift.
+        </p>
+        @if(r.evaluation.status==='available'){
+        <div class="metrics">
+          <div>
+            <span>Association rules hit rate at 3</span
+            ><strong class="value"
+              >{{(r.evaluation.hit_rate_at_3||0)*100|number:'1.0-1'}}%</strong
+            >
+          </div>
+          <div>
+            <span>Popularity baseline hit rate at 3</span
+            ><strong class="value"
+              >{{(r.evaluation.popularity_hit_rate_at_3||0)*100|number:'1.0-1'}}%</strong
+            >
+          </div>
+          <div>
+            <span>Eligible test baskets</span
+            ><strong class="value">{{r.evaluation.eligible_orders}}</strong>
+          </div>
+        </div>
+        }@else{
+        <p>
+          Not enough evaluation data. We need at least 20 training orders and 5
+          test orders containing more than one product.
+        </p>
+        }
+        <p class="fine">
+          {{r.evaluation.train_orders}} training orders ·
+          {{r.evaluation.test_orders}} test orders · Split by a deterministic
+          hash of order ID, not by time. The candidate list above is fitted to
+          all uploaded orders.
+        </p>
+      </section>
+    </section>
+    }
+  </main>
+  <footer>
+    Order analysis for merchandising decisions. No checkout integration or
+    automatic inventory changes.
+  </footer>
+</div>

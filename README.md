@@ -1,41 +1,59 @@
 # Recommendation Studio
 
-Explore how search terms, inventory rules and product preferences affect a recommendation list. Browse an illustrated example catalog, import your own inventory, compare rankings and export the results.
+A basket-analysis tool for independent shops deciding what to offer together. Upload order history, find supported product pairs, compare the signal against a popularity baseline and export a bundle shortlist for merchandising review.
 
-[Open the app](https://recommendation-studio-production.up.railway.app) · [GitHub Actions](https://github.com/Swarneil1905/recommendation-studio/actions) · [MIT license](LICENSE)
+[Open the app](https://recommendation-studio-production.up.railway.app) | [GitHub Actions](https://github.com/Swarneil1905/recommendation-studio/actions) | [MIT license](LICENSE)
 
-## Watch the walkthrough
+## See the outcome
 
-[![Recommendation Studio walkthrough: search products, add a preference and compare rankings](docs/assets/walkthrough.gif)](docs/assets/walkthrough.mp4)
+[![Order analysis, bundle shortlist and historical evaluation](docs/assets/walkthrough.gif)](docs/assets/walkthrough.mp4)
 
-[Watch or download the full video](docs/assets/walkthrough.mp4) (00:00:27.76) · [View a still screenshot](docs/assets/preview.png). This silent recording shows the live catalog, preference selection, ranking comparison and JSON export.
+[Watch the short walkthrough](docs/assets/walkthrough.mp4). Recorded against the local MVP build with the real Java and Go services. It shows fictional purchases for an easy-to-follow example, then real historical retail data.
 
-## Try it in a minute
+## Try it
 
-1. Choose a collection on the homepage and open the catalog workspace.
-2. Search for a use case, then narrow the results by category or budget.
-3. Add a product to your preference profile.
-4. Enable the ranking comparison to see its position against the query only baseline.
-5. Switch between cards and table views, inspect a product or export the results.
+1. Choose **Try real order data** to analyze 2,000 historical retail orders, or upload your own CSV.
+2. Set minimum paired-order count, confidence and lift.
+3. Inspect the order evidence for each product pair. Shortlist the pairs worth testing.
+4. Check the held-out retrieval result against the popularity baseline.
+5. Export the shortlist, verify current inventory and margins, then test placement in your own shop.
 
-The supplied catalog contains eight fictional products with generated product imagery. One product is out of stock so you can inspect inventory filtering. It is a recommendation workbench with no checkout or external commerce feed.
+The output names an anchor product, a suggested add-on, supporting counts and a proposed placement. It helps select an experiment. It does not promise a sales increase or publish changes to a store.
 
-## Current capabilities
+## Your CSV
 
-| Feature | Behavior |
-| --- | --- |
-| Catalog search | Description matching with category, budget and stock constraints |
-| Preference profile | Up to 25 products used to personalize the ranking |
-| Ranking comparison | Compare personalized positions against the same query without preferences |
-| Catalog import | Validate up to 500 products from a JSON file without replacing shared inventory |
-| Results export | Download the current results and preference profile as JSON |
+Use exactly `order_id,product_id,product_name`, with one product per order line. Repeated quantities count once. Remove customer names, emails and payment information. Limits: 10 to 5,000 orders, 1 to 30 products per order, 200 distinct products and 1 MB.
 
-Ranking uses TF IDF and cosine similarity, with no paid AI API. Similarity is a relevance measure, not a probability. Imported products use a generic illustration when no built in product image is available.
+Product names stay in the browser. Only order IDs and product IDs are submitted for analysis. Requests are not persisted; export the shortlist before leaving.
+
+## Algorithm and evaluation
+
+Go mines directional, pairwise association rules from distinct baskets:
+
+- **Support:** fraction of all orders containing both products.
+- **Confidence:** fraction of anchor orders also containing the suggested product.
+- **Lift:** confidence divided by the suggested product's overall purchase frequency. A lift of 1 indicates no association.
+
+Thresholds filter weak evidence. Candidates are sorted by lift, paired-order count and stable product IDs, with at most 200 returned. No candidates is an explicit, valid result.
+
+For evaluation, order-ID hashing holds out approximately 20% of orders. Rules are fitted only to training orders. One product is hidden from each eligible test basket; hit rate at 3 is compared with a training-only popularity baseline. This split is not chronological and does not measure future conversion or causal sales uplift. The displayed candidate list is separately fitted to all uploaded orders.
+
+## Included data
+
+The historical sample adapts **Chen, D. (2015), Online Retail**, UCI Machine Learning Repository, [DOI: 10.24432/C5BW33](https://doi.org/10.24432/C5BW33), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+It selects November 2011 positive merchandise purchases, projects baskets onto 100 popular products and takes the first 2,000 eligible invoices. Customer fields are excluded and order IDs replaced. This selection changes the distribution and is not current demand. Full attribution and transformations are in [ATTRIBUTION.txt](frontend/public/data/ATTRIBUTION.txt); rebuild using [prepare_retail_sample.py](tools/prepare_retail_sample.py) with the official ZIP and openpyxl 3.1.5.
+
+A separate 240-order fictional dataset provides a simple worked example with illustrative product imagery. The historical dataset has no photos; SKU cards identify those products without inventing images.
+
+## Additional catalog tool
+
+Catalog search remains available from the workspace navigation. It supports TF IDF ranking, inventory and budget filters, preference comparisons and JSON catalog imports. It uses no paid AI API.
 
 ## How it works
 
 ```text
-Angular interface → Java catalog API → Go ranking service
+Angular interface → Java API → Go basket mining and catalog ranking
                          ↓                    ↓
                    catalog.json         30 second cache
 ```
@@ -59,7 +77,7 @@ Requires Docker Desktop or Docker Engine with Compose. From the repository root:
 docker compose up --build
 ```
 
-Open **http://localhost:8082**. Try a descriptive search, save a product, then compare the results. Stop the stack with `docker compose down`.
+Open **http://localhost:8082**. Analyze example order history or upload a CSV and export a bundle shortlist. Stop the stack with `docker compose down`.
 
 ## Run without Docker
 

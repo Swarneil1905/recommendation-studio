@@ -22,3 +22,8 @@
 **/*-inspect-web-page.json
 **/*-list-browser-targets.json
 **/*.sqlite3
+
+# Published CC BY 4.0 sample, with customer fields removed
+!frontend/public/data/
+!frontend/public/data/retail-sample.json
+!frontend/public/data/ATTRIBUTION.txt

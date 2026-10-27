@@ -162,6 +162,10 @@ func (r *Ranker) cached(req Request) Response {
 func (r *Ranker) handler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
+	if req.URL.Path == "/baskets" {
+		basketHandler(w, req)
+		return
+	}
 	if req.URL.Path == "/health" && req.Method == "GET" {
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 		return
